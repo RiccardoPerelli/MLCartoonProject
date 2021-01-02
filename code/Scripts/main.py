@@ -15,63 +15,58 @@ from sklearn.model_selection import train_test_split
 from tensorflow.keras import layers, losses
 from tensorflow.keras.datasets import fashion_mnist
 from tensorflow.keras.models import Model
+from tensorflow.keras import backend as K
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 #============================================#
 #========== variable declaration ============#
 #============================================#
+from tensorflow.python.keras import Input
+
 X_train_set = []
 X_validation_set = []
 X_test_set = []
 
 #Model input data height and width#
-img_height = 28
-img_width = 28
+img_height = 152
+img_width = 152
 batch_size = 32
+epochs = 10
 
 #Dimensione del vettore in cui sarà compressa l'immagine#
-latent_dim = 64
+latent_dim = 256
 
-train_set = glob.glob("../CartoonImages/data/train/*.png")
-validation_set = glob.glob("../CartoonImages/data/validation/*.png")
-test_set = glob.glob("../CartoonImages/data/test/*.png")
+train_set = glob.glob("../CartoonImages/data/train/*.jpg")
+validation_set = glob.glob("../CartoonImages/data/validation/*.jpg")
+test_set = glob.glob("../CartoonImages/data/test/*.jpg")
 
 #============================================#
 #============== Images Loading ==============#
 #============================================#
-for element in train_set:
-    image = ImageOps.grayscale(PIL.Image.open(element))
-    image = np.asarray(image)
-    image_resized = resize(image, (28, 28))
-    X_train_set.append(image_resized)
 
-for element in validation_set:
-    image = ImageOps.grayscale(PIL.Image.open(element))
-    image = np.asarray(image)
-    image_resized = resize(image, (28, 28))
-    X_validation_set.append(image_resized)
+print("train loading starting:")
+x_train_set = np.array([np.array(PIL.Image.open(fname)) for fname in train_set])
+x_train_set = resize(x_train_set, (len(x_train_set), img_height, img_width, 3))
 
-for element in test_set:
-    image = ImageOps.grayscale(PIL.Image.open(element))
-    image = np.asarray(image)
-    image_resized = resize(image, (28, 28))
-    X_test_set.append(image_resized)
+#print("validation loading starting:")
 
-train_set = np.array(X_train_set)
-train_set = train_set.astype('float32') / 255.
+#print("test loading starting:")
 
-validation_set = np.array(X_validation_set)
-validation_set = validation_set.astype('float32') / 255.
+#train_set = np.array(X_train_set)
+#x_train_set = x_train_set.astype('float32') / 255.
 
-test_set = np.array(X_test_set)
-test_set = test_set.astype('float32') / 255.
+#validation_set = np.array(X_validation_set)
+#validation_set = validation_set.astype('float32') / 255.
 
+#test_set = np.array(X_test_set)
+#test_set = test_set.astype('float32') / 255.
 
 #============================================#
 #============= Class declaration ============#
 #============================================#
 #Classe contenente il modello (l'autoencoder)#
 class Autoencoder(Model):
+  '''
   def __init__(self, latent_dim):
     super(Autoencoder, self).__init__()
     self.latent_dim = latent_dim
@@ -80,8 +75,29 @@ class Autoencoder(Model):
       layers.Dense(latent_dim, activation='relu'),
     ])
     self.decoder = tf.keras.Sequential([
-      layers.Dense(784, activation='sigmoid'),
-      layers.Reshape((28, 28))
+      layers.Dense(img_height*img_width*3, activation='sigmoid'),
+      layers.Reshape((img_height, img_width, 3))
+    ])'''
+
+  def __init__(self, latent_dim):
+    super(Autoencoder, self).__init__()
+    self.latent_dim = latent_dim
+    self.encoder = tf.keras.Sequential([
+      layers.Input(shape=(img_height, img_width, 3)),
+      layers.Conv2D(32, (3, 3), activation='relu', padding='same', strides=(2, 2)),
+      layers.Conv2D(64, (3, 3), activation='relu', padding='same', strides=(2, 2)),
+      #layers.Flatten(),
+      #layers.Dense(latent_dim, activation='relu'),
+    ])
+    self.decoder = tf.keras.Sequential([
+      #layers.Reshape((16, 16, 1)),
+      #layers.BatchNormalization(),
+      layers.Conv2DTranspose(64, kernel_size=3, strides=(2, 2),
+        activation='relu', padding='same'),
+      layers.Conv2DTranspose(32, kernel_size=3, strides=(2, 2),
+        activation='relu', padding='same'),
+      layers.Conv2D(3, (3, 3), activation='sigmoid',
+        padding='same')
     ])
 
   def call(self, x):
@@ -93,12 +109,30 @@ autoencoder = Autoencoder(latent_dim)
 
 autoencoder.compile(optimizer='adam', loss=losses.MeanSquaredError())
 
-autoencoder.fit(train_set, train_set,
-                epochs=10,
-                shuffle=True,
-                validation_data=(validation_set, validation_set))
+autoencoder.fit(x_train_set, x_train_set,
+                epochs=epochs,
+                shuffle=True)
+                #validation_data=(validation_set, validation_set))
+
+autoencoder.summary()
+
+encoded_imgs = autoencoder.encoder.predict(x_train_set)
+decoded_imgs = autoencoder.decoder.predict(encoded_imgs)
 
 #============================================#
-#============== What's next? ================#
+#========== Results Visualization ===========#
 #============================================#
-# Todo: visualizzare immagini ricostruite  
+# Todo: visualizzare immagini ricostruite
+
+plt.figure(figsize=(10,10))
+for i in range(0, 20, 2):
+    plt.subplot(4,5,i+1)
+    plt.xticks([])
+    plt.yticks([])
+    plt.grid(False)
+    plt.imshow(decoded_imgs[i], cmap=plt.cm.binary)
+    plt.subplot(4, 5, i + 2)
+    plt.grid(False)
+    plt.imshow(x_train_set[i], cmap=plt.cm.binary)
+plt.show()
+
