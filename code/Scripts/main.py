@@ -28,13 +28,13 @@ X_validation_set = []
 X_test_set = []
 
 #Model input data height and width#
-img_height = 152
-img_width = 152
+img_height = 128
+img_width = 128
 batch_size = 32
-epochs = 10
+epochs = 15
 
 #Dimensione del vettore in cui sarà compressa l'immagine#
-latent_dim = 256
+latent_dim = 8192
 
 train_set = glob.glob("../CartoonImages/data/train/*.jpg")
 validation_set = glob.glob("../CartoonImages/data/validation/*.jpg")
@@ -84,20 +84,21 @@ class Autoencoder(Model):
     self.latent_dim = latent_dim
     self.encoder = tf.keras.Sequential([
       layers.Input(shape=(img_height, img_width, 3)),
+      layers.Conv2D(16, (3, 3), activation='relu', padding='same', strides=(2, 2)),
       layers.Conv2D(32, (3, 3), activation='relu', padding='same', strides=(2, 2)),
       layers.Conv2D(64, (3, 3), activation='relu', padding='same', strides=(2, 2)),
-      #layers.Flatten(),
-      #layers.Dense(latent_dim, activation='relu'),
+      layers.Conv2D(128, (3, 3), activation='relu', padding='same', strides=(2, 2)),
+      layers.Flatten(),
+      layers.Dense(latent_dim, activation='relu'),
     ])
     self.decoder = tf.keras.Sequential([
-      #layers.Reshape((16, 16, 1)),
-      #layers.BatchNormalization(),
-      layers.Conv2DTranspose(64, kernel_size=3, strides=(2, 2),
-        activation='relu', padding='same'),
-      layers.Conv2DTranspose(32, kernel_size=3, strides=(2, 2),
-        activation='relu', padding='same'),
-      layers.Conv2D(3, (3, 3), activation='sigmoid',
-        padding='same')
+      layers.Reshape((8, 8, 128)),
+      layers.BatchNormalization(),
+      layers.Conv2DTranspose(128, kernel_size=3, strides=(2, 2), activation='relu', padding='same'),
+      layers.Conv2DTranspose(64, kernel_size=3, strides=(2, 2), activation='relu', padding='same'),
+      layers.Conv2DTranspose(32, kernel_size=3, strides=(2, 2), activation='relu', padding='same'),
+      layers.Conv2DTranspose(16, kernel_size=3, strides=(2, 2), activation='relu', padding='same'),
+      layers.Conv2D(3, (3, 3), activation='sigmoid', padding='same')
     ])
 
   def call(self, x):
@@ -114,7 +115,8 @@ autoencoder.fit(x_train_set, x_train_set,
                 shuffle=True)
                 #validation_data=(validation_set, validation_set))
 
-autoencoder.summary()
+autoencoder.encoder.summary()
+autoencoder.decoder.summary()
 
 encoded_imgs = autoencoder.encoder.predict(x_train_set)
 decoded_imgs = autoencoder.decoder.predict(encoded_imgs)
