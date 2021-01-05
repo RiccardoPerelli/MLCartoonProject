@@ -1,4 +1,5 @@
 import glob
+import os
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -9,6 +10,7 @@ import PIL.Image
 import pathlib
 from PIL import ImageOps
 from skimage.transform import resize
+import face_recognition as fr
 
 from sklearn.metrics import accuracy_score, precision_score, recall_score
 from sklearn.model_selection import train_test_split
@@ -36,7 +38,7 @@ epochs = 10
 #Dimensione del vettore in cui sarà compressa l'immagine#
 latent_dim = 256
 
-train_set = glob.glob("../CartoonImages/data/train/*.jpg")
+train_set = glob.glob("../CartoonImages/data/dummy/*.jpg")
 validation_set = glob.glob("../CartoonImages/data/validation/*.jpg")
 test_set = glob.glob("../CartoonImages/data/test/*.jpg")
 
@@ -66,8 +68,8 @@ x_train_set = resize(x_train_set, (len(x_train_set), img_height, img_width, 3))
 #============================================#
 #Classe contenente il modello (l'autoencoder)#
 class Autoencoder(Model):
-  '''
-  def __init__(self, latent_dim):
+
+  '''def __init__(self, latent_dim):
     super(Autoencoder, self).__init__()
     self.latent_dim = latent_dim
     self.encoder = tf.keras.Sequential([
@@ -123,7 +125,7 @@ decoded_imgs = autoencoder.decoder.predict(encoded_imgs)
 #========== Results Visualization ===========#
 #============================================#
 # Todo: visualizzare immagini ricostruite
-
+'''
 plt.figure(figsize=(10,10))
 for i in range(0, 20, 2):
     plt.subplot(4,5,i+1)
@@ -134,5 +136,12 @@ for i in range(0, 20, 2):
     plt.subplot(4, 5, i + 2)
     plt.grid(False)
     plt.imshow(x_train_set[i], cmap=plt.cm.binary)
-plt.show()
+plt.show()'''
 
+#IMAGE CROP
+uncropped_set = glob.glob('../RealImages/all/*.jpg')
+
+for filename in uncropped_set:
+    pixels = plt.imread(filename)
+    pixels = fr.extract_face(filename)
+    plt.imsave('../RealImages/cropped/' + os.path.basename(filename), pixels)
