@@ -13,7 +13,7 @@ def extract_face(filename, required_size=(224, 224)):
     x1, y1, width, height = results[0]['box']
     x2, y2 = x1 + width, y1 + height
 
-    face = pixels[y1-40:y2+40, x1-40:x2+40]
+    face = pixels[y1:y2, x1:x2]
     image = Image.fromarray(face)
     image = image.resize(required_size)
     face_array = np.asarray(image)

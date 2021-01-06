@@ -10,7 +10,6 @@ import PIL.Image
 import pathlib
 from PIL import ImageOps
 from skimage.transform import resize
-import face_recognition as fr
 
 from sklearn.metrics import accuracy_score, precision_score, recall_score
 from sklearn.model_selection import train_test_split
@@ -19,6 +18,9 @@ from tensorflow.keras.datasets import fashion_mnist
 from tensorflow.keras.models import Model
 from tensorflow.keras import backend as K
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
+import real_image_train as rit
+import face_recognition as fr
 
 #============================================#
 #========== variable declaration ============#
@@ -38,7 +40,7 @@ epochs = 15
 #Dimensione del vettore in cui sarà compressa l'immagine#
 latent_dim = 8192
 
-train_set = glob.glob("../CartoonImages/data/train/*.jpg")
+train_set = glob.glob("../CartoonImages/data/dummy/*.jpg")
 validation_set = glob.glob("../CartoonImages/data/validation/*.jpg")
 test_set = glob.glob("../CartoonImages/data/test/*.jpg")
 
@@ -127,7 +129,7 @@ decoded_imgs = autoencoder.decoder.predict(encoded_imgs)
 #========== Results Visualization ===========#
 #============================================#
 # Todo: visualizzare immagini ricostruite
-
+'''
 plt.figure(figsize=(10,10))
 for i in range(0, 20, 2):
     plt.subplot(4,5,i+1)
@@ -139,11 +141,15 @@ for i in range(0, 20, 2):
     plt.grid(False)
     plt.imshow(x_train_set[i], cmap=plt.cm.binary)
 plt.show()
-
-#IMAGE CROP
-uncropped_set = glob.glob('../RealImages/all/*.jpg')
+'''
+'''
+# IMAGE CROP TEST SET
+uncropped_set = glob.glob('../RealImages/test/*.jpg')
 
 for filename in uncropped_set:
     pixels = plt.imread(filename)
     pixels = fr.extract_face(filename)
-    plt.imsave('../RealImages/cropped/' + os.path.basename(filename), pixels)
+    plt.imsave('../RealImages/test_cropped/' + os.path.basename(filename), pixels)
+'''
+
+rit.train_real_images()
