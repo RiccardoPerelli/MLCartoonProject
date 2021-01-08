@@ -20,7 +20,7 @@ from tensorflow.keras import backend as K
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 import real_image_train as rit
-import face_recognition as fr
+import data_preprocessing as dp
 
 #============================================#
 #========== variable declaration ============#
@@ -40,7 +40,7 @@ epochs = 15
 #Dimensione del vettore in cui sarà compressa l'immagine#
 latent_dim = 8192
 
-train_set = glob.glob("../CartoonImages/data/dummy/*.jpg")
+train_set = glob.glob("../CartoonImages/data/train/*.jpg")
 validation_set = glob.glob("../CartoonImages/data/validation/*.jpg")
 test_set = glob.glob("../CartoonImages/data/test/*.jpg")
 
@@ -129,7 +129,7 @@ decoded_imgs = autoencoder.decoder.predict(encoded_imgs)
 #========== Results Visualization ===========#
 #============================================#
 # Todo: visualizzare immagini ricostruite
-'''
+
 plt.figure(figsize=(10,10))
 for i in range(0, 20, 2):
     plt.subplot(4,5,i+1)
@@ -141,15 +141,23 @@ for i in range(0, 20, 2):
     plt.grid(False)
     plt.imshow(x_train_set[i], cmap=plt.cm.binary)
 plt.show()
-'''
-'''
-# IMAGE CROP TEST SET
-uncropped_set = glob.glob('../RealImages/test/*.jpg')
 
+
+# IMAGE PRE PROCESSING
+uncropped_set = glob.glob('../RealImages/test/*.jpg')
+print("Dataset Real Image preprocessing...")
+for filename in uncropped_set:
+    if not os.path.isfile('..RealImages/test_cropped' + os.path.basename(filename)):
+        image = plt.imread(filename)
+        image = dp.portrait_segmentation(filename)
+        plt.imsave('..RealImages/test_cropped' + os.path.basename(filename), image)
+'''
 for filename in uncropped_set:
     pixels = plt.imread(filename)
     pixels = fr.extract_face(filename)
     plt.imsave('../RealImages/test_cropped/' + os.path.basename(filename), pixels)
 '''
+
+
 
 rit.train_real_images()
