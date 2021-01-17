@@ -12,7 +12,7 @@ model.eval()
 
 from torchvision import transforms
 
-def portrait_segmentation(filename, required_size=(224,224)):
+def portrait_segmentation(filename, required_size=(224, 224)):
     img = Image.open(filename)
     img = img.resize(required_size)
 
@@ -48,6 +48,7 @@ def infer_op(op):
     op.astype(np.uint8)
     return op
 
+'''
 def extract_face(filename, required_size=(224, 224)):
     pixels = plt.imread(filename)
 
@@ -61,7 +62,7 @@ def extract_face(filename, required_size=(224, 224)):
     image = Image.fromarray(face)
     image = image.resize(required_size)
     face_array = np.asarray(image)
-    return face_array
+    return face_array'''
 
 
 
