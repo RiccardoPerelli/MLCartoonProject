@@ -14,16 +14,18 @@ from skimage.transform import resize
 from tensorflow.keras import layers, losses
 from tensorflow.keras.models import Model
 
+import main as ma
+
 x_train_set = []
 x_validation_set = []
 x_test_set = []
 
-img_height = 128
-img_width = 128
+img_height = 64
+img_width = 64
 batch_size = 64
 epochs = 15
 
-latent_dim = 4096
+latent_dim = 1024
 
 class RealAutoencoder(Model):
     '''def __init__(self, latent_dim):
@@ -43,19 +45,23 @@ class RealAutoencoder(Model):
         self.latent_dim = latent_dim
         self.encoder = tf.keras.Sequential([
             layers.Input(shape=(img_height, img_width, 3)),
-            layers.Conv2D(16, (3, 3), activation='relu', padding='same', strides=(2, 2)),
             layers.Conv2D(32, (3, 3), activation='relu', padding='same', strides=(2, 2)),
             layers.Conv2D(64, (3, 3), activation='relu', padding='same', strides=(2, 2)),
+            ma.conv3,
+            ma.conv4,
             layers.Flatten(),
-            layers.Dense(latent_dim, activation='relu'),
+            ma.fc1,
+            ma.fc2
         ])
         self.decoder = tf.keras.Sequential([
-            layers.Reshape((16, 16, 16)),
+            layers.Reshape((1, 1, 1024)),
             layers.BatchNormalization(),
+            ma.deconv1,
+            ma.deconv2,
+            layers.Conv2DTranspose(128, kernel_size=3, strides=(4, 4), activation='relu', padding='same'),
             layers.Conv2DTranspose(64, kernel_size=3, strides=(2, 2), activation='relu', padding='same'),
-            layers.Conv2DTranspose(32, kernel_size=3, strides=(2, 2), activation='relu', padding='same'),
-            layers.Conv2DTranspose(16, kernel_size=3, strides=(2, 2), activation='relu', padding='same'),
-            layers.Conv2D(3, (3, 3), activation='sigmoid', padding='same')
+            layers.Conv2DTranspose(3, kernel_size=3, strides=(2, 2), activation='relu', padding='same'),
+            # layers.Conv2D(3, (3, 3), activation='sigmoid', padding='same')
         ])
 
     def call(self, x):
@@ -65,7 +71,7 @@ class RealAutoencoder(Model):
 
 
 def train_real_images():
-    train_set = glob.glob('../RealImages/train_cropped/*.jpg')
+    train_set = glob.glob('../RealImages/dummy/*.jpg')
     # validation_set = glob.glob("../RealImages/val_cropped/*.jpg")
     # test_set = glob.glob("../RealImages/data/test_cropped/*.jpg")
 
