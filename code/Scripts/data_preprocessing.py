@@ -12,7 +12,7 @@ model.eval()
 
 from torchvision import transforms
 
-def portrait_segmentation(filename, required_size=(224, 224)):
+def portrait_segmentation(filename, required_size=(64, 64)):
     img = Image.open(filename)
     img = img.resize(required_size)
 
