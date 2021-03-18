@@ -8,6 +8,10 @@ __pycache__/
 
 # Distribution / packaging
 .Python
+code/CartoonImages
+CartoonImages/
+RealImages/
+code/RealImages
 build/
 develop-eggs/
 dist/
