@@ -41,7 +41,7 @@ X_test_set = []
 img_height = 64
 img_width = 64
 channels = 3
-batch_size = 256
+batch_size = 128
 epochs = 501
 alpha = 0.2
 INIT_LR=1e-4
@@ -51,7 +51,7 @@ latent_dim = 1024
 
 leaky = tf.keras.layers.LeakyReLU(alpha)
 
-cartoon_train_set = glob.glob("../CartoonImages/data/dummy/*.jpg")
+#cartoon_train_set = glob.glob("../CartoonImages/data/dummy/*.jpg")
 #validation_set = glob.glob("../CartoonImages/data/validation_big/*.jpg")
 #test_set = glob.glob("../CartoonImages/data/test/*.jpg")
 
@@ -59,9 +59,9 @@ cartoon_train_set = glob.glob("../CartoonImages/data/dummy/*.jpg")
 #============== Images Loading ==============#
 #============================================#
 
-print("cartoon train loading starting:")
-x_cartoon_train_set = np.array([np.array(PIL.Image.open(fname)) for fname in cartoon_train_set])
-x_cartoon_train_set = resize(x_cartoon_train_set, (len(x_cartoon_train_set), img_height, img_width, 3))
+#print("cartoon train loading starting:")
+#x_cartoon_train_set = np.array([np.array(PIL.Image.open(fname)) for fname in cartoon_train_set])
+#x_cartoon_train_set = resize(x_cartoon_train_set, (len(x_cartoon_train_set), img_height, img_width, 3))
 
 #============================================#
 #============ Common layers def. ============#
@@ -113,9 +113,9 @@ def build_real_decoder(width, height, inputDim=1024, n1=512, channels=3):
     dim1 = 1
     dim2 = 1
     
-    y = Dense(dim1 * dim2 * n1, activation="relu")(inp)
+    y = Dense(dim1 * dim2 * inputDim, activation="relu")(inp)
     
-    y = Reshape((dim1, dim2, n1))(y)
+    y = Reshape((dim1, dim2, inputDim))(y)
     
     y = deconv1(y)
     y = BatchNormalization()(y)
@@ -125,7 +125,7 @@ def build_real_decoder(width, height, inputDim=1024, n1=512, channels=3):
     y = BatchNormalization()(y)
     y = Conv2DTranspose(64, kernel_size=4, strides=(2, 2), activation='relu', padding='same')(y)
     y = BatchNormalization()(y)
-    out = Conv2DTranspose(3, (3, 3), strides=(1, 1), activation='tanh', padding='same')(y)
+    out = Conv2DTranspose(3, (3, 3), strides=(2, 2), activation='tanh', padding='same')(y)
     
     m = Model(inputs=inp, outputs=out)
     return m
@@ -194,13 +194,14 @@ real_encoder.summary()
 
 cartoon_autoencoder = tf.keras.Sequential([cartoon_encoder, cartoon_decoder])
 real_autoencoder = tf.keras.Sequential([real_encoder, real_decoder])
+final_autoencoder = tf.keras.Sequential([cartoon_encoder, real_decoder])
 
 autoencoderOpt = tf.keras.optimizers.Adam(lr=INIT_LR, beta_1=0.5)
 
 cartoon_autoencoder.compile(loss="mse", optimizer=autoencoderOpt, metrics=["accuracy"])
 cartoon_autoencoder.summary()
 
-real_autoencoder.compile(loss="mse", optimizer=autoencoderOpt)
+real_autoencoder.compile(loss="mse", optimizer=autoencoderOpt, metrics=["accuracy"])
 real_autoencoder.summary()
 
 def preprocessing_function(x):
@@ -254,12 +255,14 @@ def generate_latent_points(latent_dim, n_samples):
 
 cartoon_train = train_generator.flow_from_directory("../CartoonImages/data/train", target_size=(64,64), batch_size=batch_size)
 #cartoon_train = train_generator.flow_from_directory("../CartoonImages/data/train", target_size=(64,64), batch_size=batch_size)
-real_train = train_generator.flow_from_directory("../RealImages/train_cropped", target_size=(64,64,3), batch_size=batch_size)
+cartoon_test = train_generator.flow_from_directory("../CartoonImages/data/test", target_size=(64,64), batch_size=batch_size)
+real_train = train_generator.flow_from_directory("../RealImages/train_cropped", target_size=(64,64), batch_size=batch_size)
 
 for epoch in range(epochs):
     for b in range(batchPerEpoch):
         # now train the discriminator to differentiate between true and fake images
-        trueImages, _ = next(cartoon_train)
+        trueImages, _  = next(cartoon_train)
+        trueImages2, _2 = next(real_train)
         # one sided label smoothing reduces overconfidence in true images and stabilizes training a bit
         '''
         y = 0.9 * np.ones((trueImages.shape[0]))
@@ -293,12 +296,16 @@ for epoch in range(epochs):
         #history['G_loss'].append(ganLoss)
         #y = 0.9 * np.ones((trueImages.shape[0]))
         cartoon_autoencoder_Loss, cartoon_autoencoder_Acc = cartoon_autoencoder.train_on_batch(trueImages, trueImages)
+        real_autoencoder_Loss, real_autoencoder_Acc = real_autoencoder.train_on_batch(trueImages2, trueImages2)
         # at the end of each epoc
-    print("epoch " + str(epoch) + ": autoencoder loss " + str(cartoon_autoencoder_Loss) + " ( " + str(
+    print("cartoon epoch " + str(epoch) + ": cartoon autoencoder loss " + str(cartoon_autoencoder_Loss) + " ( " + str(
         cartoon_autoencoder_Acc) + " ) ")
+    print("real epoch " + str(epoch) + ": real autoencoder loss " + str(real_autoencoder_Loss) + " ( " + str(
+        real_autoencoder_Acc) + " ) ")
 
     # it is important to regularly visualize the output
     images = cartoon_autoencoder.predict(trueImages)
+    images2 = real_autoencoder.predict(trueImages2)
     #images = gen.predict(benchmarkNoise)
     if (epoch % 50) == 0:
         plt.figure(figsize=(10, 10))
@@ -313,6 +320,35 @@ for epoch in range(epochs):
             plt.imshow(trueImages[i], cmap=plt.cm.binary)
         plt.show()
 
+    if (epoch % 50) == 0:
+        plt.figure(figsize=(10, 10))
+        for i in range(0, 20, 2):
+            plt.subplot(4, 5, i + 1)
+            plt.xticks([])
+            plt.yticks([])
+            plt.grid(False)
+            plt.imshow(images2[i], cmap=plt.cm.binary)
+            plt.subplot(4, 5, i + 2)
+            plt.grid(False)
+            plt.imshow(trueImages2[i], cmap=plt.cm.binary)
+        plt.show()
+
+final_autoencoder.compile(loss="mse", optimizer=autoencoderOpt)
+final_autoencoder.summary()
+trueImages3, _  = next(cartoon_test)
+
+images3 = final_autoencoder.predict(trueImages3)
+plt.figure(figsize=(10, 10))
+for i in range(0, 20, 2):
+    plt.subplot(4, 5, i + 1)
+    plt.xticks([])
+    plt.yticks([])
+    plt.grid(False)
+    plt.imshow(images3[i], cmap=plt.cm.binary)
+    plt.subplot(4, 5, i + 2)
+    plt.grid(False)
+    plt.imshow(trueImages3[i], cmap=plt.cm.binary)
+plt.show()
     # save regularly as the training may destabilize and start producing garbage image again
     #if (epoch % 100) == 0:
         #gan.save(os.path.join(directory_models, "model64_0103" + str(epoch) + ".h5"))
