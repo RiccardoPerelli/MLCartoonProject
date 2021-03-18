@@ -77,6 +77,9 @@ fc2 = Dense(latent_dim, activation='relu')
 deconv1 = Conv2DTranspose(512, kernel_size=5, strides=(4, 4), activation='relu', padding='same')
 deconv2 = Conv2DTranspose(256, kernel_size=4, strides=(2, 2), activation='relu', padding='same')
 
+#plottare il modello
+#tf.keras.utils.plot_model(model, "simple_resnet.png",show_shapes=True)
+
 def build_cartoon_decoder(width, height, inputDim=1024, n1=512, channels=3):
 
     inp = Input(shape=(inputDim,))
@@ -250,8 +253,8 @@ def generate_latent_points(latent_dim, n_samples):
 
 
 cartoon_train = train_generator.flow_from_directory("../CartoonImages/data/train", target_size=(64,64), batch_size=batch_size)
-cartoon_train = train_generator.flow_from_directory("../CartoonImages/data/train", target_size=(64,64), batch_size=batch_size)
-#real_train = train_generator.flow_from_directory("../RealImages/train_cropped", target_size=(64,64,3), batch_size=batch_size)
+#cartoon_train = train_generator.flow_from_directory("../CartoonImages/data/train", target_size=(64,64), batch_size=batch_size)
+real_train = train_generator.flow_from_directory("../RealImages/train_cropped", target_size=(64,64,3), batch_size=batch_size)
 
 for epoch in range(epochs):
     for b in range(batchPerEpoch):
