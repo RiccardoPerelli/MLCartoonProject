@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 import torch
+import glob
+import os
 
 device = "cpu"
 #device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -12,8 +14,17 @@ model.eval()
 
 from torchvision import transforms
 
-def portrait_segmentation(filename, required_size=(64, 64)):
+def portrait_segmentation(filename, required_size=(512, 512)):
+
     img = Image.open(filename)
+
+    width, height = img.size
+    left = 918
+    top = 0
+    right = 3690
+    bottom = height - 300
+
+    img = img.crop((left, top, right, bottom))
     img = img.resize(required_size)
 
     mask = get_mask(img, model)
@@ -48,6 +59,32 @@ def infer_op(op):
     op.astype(np.uint8)
     return op
 
+# IMAGE PRE PROCESSING
+uncropped_real_all_set = glob.glob('../RealImages/all2/*.jpg')
+uncropped_real_train_set = glob.glob('../RealImages/train2/*.jpg')
+print("Dataset Real Image preprocessing...")
+count = 1;
+for filename in uncropped_real_all_set:
+    print("Converting image n°: ")
+    print(count)
+    count += 1
+    if not os.path.isfile('../RealImages/all_cropped2' + os.path.basename(filename)):
+        image = plt.imread(filename)
+        image = portrait_segmentation(filename)
+        plt.imsave('../RealImages/all_cropped2/' + os.path.basename(filename), image)
+
+for filename in uncropped_real_train_set:
+    if not os.path.isfile('../RealImages/train_cropped2' + os.path.basename(filename)):
+        image = plt.imread(filename)
+        image = portrait_segmentation(filename)
+        plt.imsave('../RealImages/train_cropped2/' + os.path.basename(filename), image)
+
+'''
+for filename in uncropped_set:
+    pixels = plt.imread(filename)
+    pixels = fr.extract_face(filename)
+    plt.imsave('../RealImages/test_cropped/' + os.path.basename(filename), pixels)
+'''
 '''
 def extract_face(filename, required_size=(224, 224)):
     pixels = plt.imread(filename)

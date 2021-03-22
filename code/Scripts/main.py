@@ -27,7 +27,7 @@ from tensorflow.keras import layers, losses
 from tensorflow.keras.models import Model
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
-import data_preprocessing as dp
+#import data_preprocessing as dp
 #============================================#
 #========== variable declaration ============#
 #============================================#
@@ -38,11 +38,11 @@ X_validation_set = []
 X_test_set = []
 
 #Model input data height and width#
-img_height = 64
-img_width = 64
+img_height = 128
+img_width = 128
 channels = 3
-batch_size = 128
-epochs = 501
+batch_size = 32
+epochs = 500
 alpha = 0.2
 INIT_LR=1e-4
 
@@ -75,7 +75,7 @@ fc2 = Dense(latent_dim, activation='relu')
 
 #Decoder
 deconv1 = Conv2DTranspose(512, kernel_size=5, strides=(4, 4), activation='relu', padding='same')
-deconv2 = Conv2DTranspose(256, kernel_size=4, strides=(2, 2), activation='relu', padding='same')
+deconv2 = Conv2DTranspose(256, kernel_size=4, strides=(4, 4), activation='relu', padding='same')
 
 #plottare il modello
 #tf.keras.utils.plot_model(model, "simple_resnet.png",show_shapes=True)
@@ -194,7 +194,7 @@ real_encoder.summary()
 
 cartoon_autoencoder = tf.keras.Sequential([cartoon_encoder, cartoon_decoder])
 real_autoencoder = tf.keras.Sequential([real_encoder, real_decoder])
-final_autoencoder = tf.keras.Sequential([cartoon_encoder, real_decoder])
+final_autoencoder = tf.keras.Sequential([real_encoder, cartoon_decoder])
 
 autoencoderOpt = tf.keras.optimizers.Adam(lr=INIT_LR, beta_1=0.5)
 
@@ -253,10 +253,10 @@ def generate_latent_points(latent_dim, n_samples):
 	return x_input
 
 
-cartoon_train = train_generator.flow_from_directory("../CartoonImages/data/train", target_size=(64,64), batch_size=batch_size)
+cartoon_train = train_generator.flow_from_directory("../CartoonImages/data/train", target_size=(128,128), batch_size=batch_size)
 #cartoon_train = train_generator.flow_from_directory("../CartoonImages/data/train", target_size=(64,64), batch_size=batch_size)
-cartoon_test = train_generator.flow_from_directory("../CartoonImages/data/test", target_size=(64,64), batch_size=batch_size)
-real_train = train_generator.flow_from_directory("../RealImages/train_cropped", target_size=(64,64), batch_size=batch_size)
+real_test = train_generator.flow_from_directory("../RealImages/test", target_size=(128,128), batch_size=batch_size)
+real_train = train_generator.flow_from_directory("../RealImages/all_cropped2", target_size=(128,128), batch_size=batch_size)
 
 for epoch in range(epochs):
     for b in range(batchPerEpoch):
@@ -333,6 +333,25 @@ for epoch in range(epochs):
             plt.imshow(trueImages2[i], cmap=plt.cm.binary)
         plt.show()
 
+    if (epoch % 50) == 0:
+        final_autoencoder.compile(loss="mse", optimizer=autoencoderOpt)
+        final_autoencoder.summary()
+        trueImages3, _ = next(real_test)
+
+        images3 = final_autoencoder.predict(trueImages3)
+        plt.figure(figsize=(10, 10))
+        for i in range(0, 20, 2):
+            plt.subplot(4, 5, i + 1)
+            plt.xticks([])
+            plt.yticks([])
+            plt.grid(False)
+            plt.imshow(images3[i], cmap=plt.cm.binary)
+            plt.subplot(4, 5, i + 2)
+            plt.grid(False)
+            plt.imshow(trueImages3[i], cmap=plt.cm.binary)
+        plt.show()
+
+'''
 final_autoencoder.compile(loss="mse", optimizer=autoencoderOpt)
 final_autoencoder.summary()
 trueImages3, _  = next(cartoon_test)
@@ -353,6 +372,7 @@ plt.show()
     #if (epoch % 100) == 0:
         #gan.save(os.path.join(directory_models, "model64_0103" + str(epoch) + ".h5"))
 
+'''
 '''
 #print("validation loading starting:")
 #print("test loading starting:")
