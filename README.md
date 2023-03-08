@@ -9,3 +9,6 @@ You can check it here: https://arxiv.org/abs/1711.05139
 # Results
 
 Unfortunately, we did not achieve a perfect and accurate conversion of every test image given as input. This was to be expected as the real dataset includes a very limited number of images (8768), some of which have poor lighting conditions. According to our observations, a dataset that is 10 times larger would be necessary to achieve more promising results.
+
+You can see some results:
+![alt text](https://github.com/RiccardoPerelli/MLCartoonProject/blob/main/code/SomeResultsMLProject.png)
